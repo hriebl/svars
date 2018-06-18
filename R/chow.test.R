@@ -2,9 +2,9 @@
 #'
 #' The Chow test for structural change is implemented as sample-split and break-point test (see Luetkepohl and Kraetzig, 2004, p. 135). A multivariate time series and the presupposed structural break need to be provided.
 #'
-#' @param Y Data of multivariate time series
-#' @param SB Integer or date character. The structural break is specified either by an integer (number of observations in the pre-break period) or
-#'                    a date character. If a date character is provided, either a date vector containing the whole time line
+#' @param Y Data of multivariate time series in matrix form
+#' @param SB Integer, vector or date character. The structural break is specified either by an integer (number of observations in the pre-break period),
+#'                    a vector of ts() frequencies if a ts object is used in the VAR or a date character. If a date character is provided, either a date vector containing the whole time line
 #'                    in the corresponding format or common time parameters need to be provided
 #' @param p Integer. Number of lags included in the presumed VAR model
 #' @param nboot Integer. Number of bootstrap iterations to calculate quantiles and p-values
@@ -20,28 +20,32 @@
 #' \item{testcrit_bp}{Critical value of the test statistic lambda_bp}
 #' \item{p.value_bp}{p-value of the test statistic lambda_bp}
 #' \item{lambda_sp}{Test statistic of the Chow test with sample split}
-#' \item{testcrit_sp}{Critival value of the test statistic lambda_sp}
+#' \item{testcrit_sp}{Critical value of the test statistic lambda_sp}
 #' \item{p.value_sp}{p-value of the test statistic lambda_sp}
 #'
-#' @references Luetkepohl, H., 2005. New introduction to multiple time series analysis, Springer-Verlag, Berlin.
+#' @references Luetkepohl, H., 2005. New introduction to multiple time series analysis, Springer-Verlag, Berlin.\cr
 #'      Luetkepohl, H., Kraetzig, M., 2004. Applied time series econometrics, Cambridge University Press, Cambridge.
 #'@examples
-#' \dontrun{
+#' \donttest{
 #' # Testing for structural break in USA data
-#' z1 = chow.test(USA, SB = 65, p = 6)
+#' z1 = chow.test(USA, SB = 59, p = 6)
 #' summary(z1)
 #'
-#' Structural brake via Dates
-#' given that time series vector with dates is available
-#' dateVector = seq(as.Date("1965/1/1"), as.Date("2008/6/1"), "quarter")
-#' z2 <- chow.test(USA, SB = "1985-01-01", p = 6, format = "%Y-%m-%d", dateVector = dateVector)
+#' #Structural brake via Dates
+#' #given that time series vector with dates is available
+#' dateVector = seq(as.Date("1965/1/1"), as.Date("2008/7/1"), "quarter")
+#' z2 <- chow.test(USA, SB = "1979-07-01", p = 6, format = "%Y-%m-%d", dateVector = dateVector)
 #' summary(z2)
 #'
 #' # alternatively pass sequence arguments directly
-#' z3 <- chow.test(USA, SB = "1985-01-01", p = 6, format = "%Y-%m-%d",
-#'                 start = "1965-01-01", end = "2008-06-01",
+#' z3 <- chow.test(USA, SB = "1979-07-01", p = 6, format = "%Y-%m-%d",
+#'                 start = "1965-01-01", end = "2008-07-01",
 #'                 frequency = "quarter")
+#' summary(z3)
 #'
+#' # or provide ts date format (For quarterly, monthly, weekly and daily frequencies only)
+#' z4 <- chow.test(USA, SB = c(1979,3), p = 6)
+#' summary(z4)
 #' }
 #' @import stats
 #' @importFrom utils combn
@@ -59,7 +63,7 @@
 # nboot : number of bootstrap iterations
 # lags  : maximum lag order
 
-chow.test <- function(Y, SB, p, nboot = 500, rademacher="FALSE",start = NULL, end = NULL,
+chow.test <- function(Y, SB, p, nboot = 500, rademacher= FALSE ,start = NULL, end = NULL,
                       frequency = NULL, format = NULL, dateVector = NULL){
   # Null hypothesis of no sample split is rejected for large values of lambda
   Tob <- nrow(Y) - p
@@ -73,16 +77,21 @@ chow.test <- function(Y, SB, p, nboot = 500, rademacher="FALSE",start = NULL, en
                              frequency = frequency, format = format, dateVector = dateVector, Tob = Tob, p = p)
   }
 
-  # function to create Z matrix
-  y_lag_cr <- function(y, lag_length){
-    # create matrix that stores the lags
-    y_lag <- matrix(NA, dim(y)[1],dim(y)[2]*lag_length)
-    for (i in 1:lag_length) {
-      y_lag[(1+i):dim(y)[1],((i*NCOL(y)-NCOL(y))+1):(i*NCOL(y))] <- y[1:(dim(y)[1]-i),(1:NCOL(y))]
+  if(length(SB) != 1 & inherits(Y, "ts")){
+    SBts = SB
+    SB = dim(window(Y, end = SB))[1]
+    if(frequency(Y == 4)){
+      SBcharacter = paste(SBts[1], " Q", SBts[2], sep = "")
+    }else if(frequency(Y == 12)){
+      SBcharacter = paste(SBts[1], " M", SBts[2], sep = "")
+    }else if(frequency(Y == 52)){
+      SBcharacter = paste(SBts[1], " W", SBts[2], sep = "")
+    }else if(frequency(Y == 365.25)){
+      SBcharacter = paste(SBts[1], "-", SBts[2], "-", SBts[3], sep = "")
+    }else{
+      SBcharacter = NULL
     }
-    # drop first observation
-    y_lag <- as.matrix(y_lag[-(1:lag_length),])
-    out <- list(lags = y_lag)
+
   }
 
   sqrt.f <- function(Pstar, Sigma_u_star){
@@ -182,8 +191,6 @@ chow.test <- function(Y, SB, p, nboot = 500, rademacher="FALSE",start = NULL, en
       lambda_bpB[i] <- (l1 + l2)*log(det(Sigma)) - l1*log(det(Sigma.1)) - l2*log(det(Sigma.2))
       lambda_spB[i] <- (l1 + l2)*(log(det(Sigma)) - log(det((1/(l1 + l2))*(l1*Sigma.1 + l2*Sigma.2))))
     }
-
-
 
     K <- VAR.model$K
     df_bp <- p*K^2 + K + (K*(K + 1))/2

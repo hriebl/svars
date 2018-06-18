@@ -10,23 +10,23 @@
 #' @return A list of class "svars" with elements
 #' \item{B}{Estimated structural impact matrix B, i.e. unique decomposition of the covariance matrix of reduced form errors}
 #' \item{A_hat}{Estimated VAR parameter}
-#' \item{method}{Method applied for identifaction}
+#' \item{method}{Method applied for identification}
 #' \item{n}{Number of observations}
 #' \item{type}{Type of the VAR model, e.g. 'const'}
 #'
-#' @seealso For alternative identification approaches see \code{\link{id.cvm}}, \code{\link{id.cv}} or \code{\link{id.ngml}}
+#' @seealso For alternative identification approaches see \code{\link{id.st}}, \code{\link{id.cvm}}, \code{\link{id.cv}} or \code{\link{id.ngml}}
 #'
 #'@references Matteson, D. S. & Tsay, R. S., 2013. Independent Component Analysis via Distance Covariance, pre-print\cr
 #'      Szekely, G. J.; Rizzo, M. L. & Bakirov, N. K., 2007. Measuring and testing dependence by correlation of distances Ann. Statist., 35, 2769-2794\cr
 #'      Comon, P., 1994. Independent component analysis, A new concept?, Signal Processing, 36, 287-314
 #' @examples
-#' \dontrun{
+#'
 #' # data contains quarterly observations from 1965Q1 to 2008Q3
 #' # x = output gap
 #' # pi = inflation
 #' # i = interest rates
 #' set.seed(23211)
-#' v1 <- VAR(USA, lag.max = 10, ic = "AIC" )
+#' v1 <- vars::VAR(USA, lag.max = 10, ic = "AIC" )
 #' x1 <- id.dc(v1)
 #' summary(x1)
 #'
@@ -37,7 +37,7 @@
 #' # impulse response analysis
 #' i1 <- imrf(x1, horizon = 30)
 #' plot(i1, scales = 'free_y')
-#' }
+#'
 #'
 #' @export
 
@@ -48,46 +48,37 @@
 
 id.dc <- function(x, PIT=FALSE){
 
-  # getting informations from VAR estimation
-  # u <- residuals(x)
-  # p <- x$p
-  # Tob <- x$obs
-  # k <- x$K
-  #
-  # if (class(x) == "vec2var") {
-  #   # TODO: trend cases
-  #
-  #   coef_x <- vector("list", length = k)
-  #   names(coef_x) <- colnames(x$y)
-  #
-  #   for (i in seq_len(k)) {
-  #     for (j in seq_len(p)) coef_x[[i]] <- c(coef_x[[i]], x$A[[j]][i,])
-  #     coef_x[[i]] <- c(coef_x[[i]], x$deterministic[i,])
-  #   }
-  #
-  #   coef_x <- lapply(coef_x, matrix)
-  #
-  #   type <- "const"
-  # } else {
-  #   coef_x <- coef(x)
-  #   type <- x$type
+  # if(is.null(residuals(x))){
+  #   stop("No residuals retrieved from model")
   # }
-  if(is.null(residuals(x))){
-    stop("No residuals retrieved from model")
+  if(inherits(x, "var.boot")){
+    u <- x$residuals
+    Tob <- nrow(u)
+    k <- ncol(u)
+    residY <- u
+  }else{
+    u <- residuals(x)
+    Tob <- nrow(u)
+    k <- ncol(u)
+    residY <- u
   }
-  u <- residuals(x)
-  Tob <- nrow(u)
-  k <- ncol(u)
-  residY <- u
 
-  if(inherits(x, "varest")){
+  if(inherits(x, "var.boot")){
     p <- x$p
     y <- t(x$y)
+    yOut = x$y
+    type = x$type
+    coef_x = x$coef_x
+  }else  if(inherits(x, "varest")){
+    p <- x$p
+    y <- t(x$y)
+    yOut = x$y
     type = x$type
     coef_x = coef(x)
   }else if(inherits(x, "nlVar")){
     p <- x$lag
     y <- t(x$model[, 1:k])
+    yOut <- x$model[, 1:k]
     coef_x <- t(coef(x))
 
     if(inherits(x, "VECM")){
@@ -96,20 +87,20 @@ id.dc <- function(x, PIT=FALSE){
 
     if(rownames(coef_x)[1] %in% c("Intercept", "constant")){
       coef_x <- coef_x[c(2:nrow(coef_x),1),]
-      type = "const"
     }else if(rownames(coef_x)[1] == "Trend"){
       coef_x <- coef_x[c(2:nrow(coef_x),1),]
-      type <- "trend"
     }
     if(rownames(coef_x)[1] %in% c("Intercept", "constant", "Trend")){
       coef_x <- coef_x[c(2:nrow(coef_x),1),]
-      type <- "both"
     }
+    type <- x$include
     coef_x <- split(coef_x, rep(1:ncol(coef_x), each = nrow(coef_x)))
     coef_x <- lapply(coef_x, as.matrix)
   }else if(inherits(x, "list")){
     p <- x$order
     y <- t(x$data)
+    yOut <- x$data
+    coef_x <- t(coef(x))
     coef_x <- x$coef
     if(x$cnst == TRUE){
       coef_x <- coef_x[c(2:nrow(coef_x),1),]
@@ -123,6 +114,7 @@ id.dc <- function(x, PIT=FALSE){
     names(coef_x) <- colnames(x$y)
     p <- x$p
     y <- t(x$y)
+    yOut <- x$y
 
     for (i in seq_len(k)) {
       for (j in seq_len(p)) coef_x[[i]] <- c(coef_x[[i]], x$A[[j]][i,])
@@ -149,17 +141,47 @@ id.dc <- function(x, PIT=FALSE){
   P <- P_chol%*%ICA$W
 
   # obtaining VAR parameter
-  A <- matrix(0, nrow = k, ncol = k*p)
-  for(i in 1:k){
-    A[i,] <- coef_x[[i]][1:(k*p),1]
-  }
-  A_hat <- A
-  if(type == 'const'){
-    v <- rep(1, k)
+  if(inherits(x, "var.boot")){
+    A_hat <- coef_x
+  }else{
+    A <- matrix(0, nrow = k, ncol = k*p)
     for(i in 1:k){
-      v[i] <- coef_x[[i]][(k*p+1), 1]
+      A[i,] <- coef_x[[i]][1:(k*p),1]
     }
-    A_hat <- cbind(v, A)
+
+    A_hat <- A
+
+    if(type == "const"){
+      v <- rep(1, k)
+
+      for(i in 1:k){
+        v[i] <- coef_x[[i]][(k*p+1), 1]
+      }
+
+      A_hat <- cbind(v, A)
+    }else if (type == "trend"){
+      trend <- rep(1, k)
+
+      for(i in 1:k){
+        trend[i] <- coef_x[[i]][(k*p+1), 1]
+      }
+
+      A_hat <- cbind(trend, A)
+    }else if(type == "both"){
+      v <- rep(1, k)
+
+      for(i in 1:k){
+        v[i] <- coef_x[[i]][(k*p+1), 1]
+      }
+
+      trend <- rep(1, k)
+
+      for(i in 1:k){
+        trend[i] <- coef_x[[i]][(k*p+2), 1]
+      }
+
+      A_hat <- cbind(v, trend, A)
+    }
   }
 
   result <- list(B = P,       # estimated B matrix (unique decomposition of the covariance matrix)
@@ -167,9 +189,9 @@ id.dc <- function(x, PIT=FALSE){
               method =        "Distance covariances",
               n = Tob,        # number of observations
               type = type,    # type of the VAR model e.g 'const'
-              y = t(y),        # Data
-              p = p,        # number of lags
-              K = k,         # number of time series
+              y = yOut,       # Data
+              p = unname(p),  # number of lags
+              K = k,          # number of time series
               PIT=PIT
               )
   class(result) <- "svars"

@@ -5,11 +5,12 @@
 #' @param x SVAR object of class "svars"
 #' @param horizon Time horizon for the impulse responses
 #'
-#' @seealso \code{\link{id.cvm}}, \code{\link{id.dc}}, \code{\link{id.ngml}} or \code{\link{id.cv}}
+#' @seealso \code{\link{id.cvm}}, \code{\link{id.dc}}, \code{\link{id.ngml}}, \code{\link{id.cv} or \code{\link{id.st}}
 #'
 #' @examples
-#' \dontrun{
-#'
+#' \donttest{
+#' v1 <- vars::VAR(USA, lag.max = 10, ic = "AIC" )
+#' x1 <- id.ngml(v1)
 #' x2 <- imrf(x1, horizon = 20)
 #' plot(x2)
 #' }
@@ -55,6 +56,10 @@ imrf <- function(x, horizon = 20){
 
   if(x$type == 'const'){
     A_hat <- x$A_hat[,-1]
+  }else if(x$type == 'trend'){
+    A_hat <- x$A_hat[,-1]
+  }else if(x$type == 'both'){
+    A_hat <- x$A_hat[,-c(1,2)]
   }else{
     A_hat <- x$A_hat
   }

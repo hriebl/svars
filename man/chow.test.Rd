@@ -4,14 +4,14 @@
 \alias{chow.test}
 \title{Chow Test for Structural Break}
 \usage{
-chow.test(Y, SB, p, nboot = 500, rademacher = "FALSE", start = NULL,
+chow.test(Y, SB, p, nboot = 500, rademacher = FALSE, start = NULL,
   end = NULL, frequency = NULL, format = NULL, dateVector = NULL)
 }
 \arguments{
-\item{Y}{Data of multivariate time series}
+\item{Y}{Data of multivariate time series in matrix form}
 
-\item{SB}{Integer or date character. The structural break is specified either by an integer (number of observations in the pre-break period) or
-a date character. If a date character is provided, either a date vector containing the whole time line
+\item{SB}{Integer, vector or date character. The structural break is specified either by an integer (number of observations in the pre-break period),
+a vector of ts() frequencies if a ts object is used in the VAR or a date character. If a date character is provided, either a date vector containing the whole time line
 in the corresponding format or common time parameters need to be provided}
 
 \item{p}{Integer. Number of lags included in the presumed VAR model}
@@ -36,32 +36,36 @@ A list with elements
 \item{testcrit_bp}{Critical value of the test statistic lambda_bp}
 \item{p.value_bp}{p-value of the test statistic lambda_bp}
 \item{lambda_sp}{Test statistic of the Chow test with sample split}
-\item{testcrit_sp}{Critival value of the test statistic lambda_sp}
+\item{testcrit_sp}{Critical value of the test statistic lambda_sp}
 \item{p.value_sp}{p-value of the test statistic lambda_sp}
 }
 \description{
 The Chow test for structural change is implemented as sample-split and break-point test (see Luetkepohl and Kraetzig, 2004, p. 135). A multivariate time series and the presupposed structural break need to be provided.
 }
 \examples{
-\dontrun{
+\donttest{
 # Testing for structural break in USA data
-z1 = chow.test(USA, SB = 65, p = 6)
+z1 = chow.test(USA, SB = 59, p = 6)
 summary(z1)
 
-Structural brake via Dates
-given that time series vector with dates is available
-dateVector = seq(as.Date("1965/1/1"), as.Date("2008/6/1"), "quarter")
-z2 <- chow.test(USA, SB = "1985-01-01", p = 6, format = "\%Y-\%m-\%d", dateVector = dateVector)
+#Structural brake via Dates
+#given that time series vector with dates is available
+dateVector = seq(as.Date("1965/1/1"), as.Date("2008/7/1"), "quarter")
+z2 <- chow.test(USA, SB = "1979-07-01", p = 6, format = "\%Y-\%m-\%d", dateVector = dateVector)
 summary(z2)
 
 # alternatively pass sequence arguments directly
-z3 <- chow.test(USA, SB = "1985-01-01", p = 6, format = "\%Y-\%m-\%d",
-                start = "1965-01-01", end = "2008-06-01",
+z3 <- chow.test(USA, SB = "1979-07-01", p = 6, format = "\%Y-\%m-\%d",
+                start = "1965-01-01", end = "2008-07-01",
                 frequency = "quarter")
+summary(z3)
 
+# or provide ts date format (For quarterly, monthly, weekly and daily frequencies only)
+z4 <- chow.test(USA, SB = c(1979,3), p = 6)
+summary(z4)
 }
 }
 \references{
-Luetkepohl, H., 2005. New introduction to multiple time series analysis, Springer-Verlag, Berlin.
+Luetkepohl, H., 2005. New introduction to multiple time series analysis, Springer-Verlag, Berlin.\cr
      Luetkepohl, H., Kraetzig, M., 2004. Applied time series econometrics, Cambridge University Press, Cambridge.
 }

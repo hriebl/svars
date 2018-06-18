@@ -23,7 +23,7 @@ A list of class "svars" with elements
 \item{B_stand}{Estimated standardized structural impact matrix}
 \item{B_stand_SE}{Standard errors of standardized matrix B_stand}
 \item{Lik}{Function value of likelihood}
-\item{method}{Method applied for identifaction}
+\item{method}{Method applied for identification}
 \item{n}{Number of observations}
 \item{type}{Type of the VAR model, e.g. 'const'}
 }
@@ -34,13 +34,13 @@ Matrix B corresponds to the unique decomposition of the least squares covariance
 A likelihood function of independent t-distributed structural shocks \eqn{\epsilon_t=B^{-1}u_t} is maximized with respect to the entries of B and the degrees of freedom of the t-distribution (Lanne et al., 2017).
 }
 \examples{
-\dontrun{
+\donttest{
 # data contains quarterly observations from 1965Q1 to 2008Q3
 # x = output gap
 # pi = inflation
 # i = interest rates
 set.seed(23211)
-v1 <- VAR(USA, lag.max = 10, ic = "AIC" )
+v1 <- vars::VAR(USA, lag.max = 10, ic = "AIC" )
 x1 <- id.ngml(v1)
 summary(x1)
 
@@ -58,5 +58,5 @@ Lanne, M., Meitz, M., Saikkonen, P., 2017. Identification and estimation of non-
 Comon, P., 1994. Independent component analysis, A new concept?, Signal Processing, 36, 287-314
 }
 \seealso{
-For alternative identification approaches see \code{\link{id.cvm}}, \code{\link{id.dc}} or \code{\link{id.cv}}
+For alternative identification approaches see \code{\link{id.st}}, \code{\link{id.cvm}}, \code{\link{id.dc}} or \code{\link{id.cv}}
 }
