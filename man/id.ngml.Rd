@@ -4,12 +4,14 @@
 \alias{id.ngml}
 \title{Non-Gaussian maximum likelihood identification of SVAR models}
 \usage{
-id.ngml(x, stage3 = FALSE)
+id.ngml(x, stage3 = FALSE, restriction_matrix = NULL)
 }
 \arguments{
 \item{x}{An object of class 'vars', 'vec2var', 'nlVar'. Estimated VAR object}
 
 \item{stage3}{Logical. If stage3="TRUE", the VAR parameters are estimated via non-gaussian maximum likelihood (computationally demanding)}
+
+\item{restriction_matrix}{Matrix. A matrix containing presupposed entries for matrix B, NA if no restriction is imposed (entries to be estimated)}
 }
 \value{
 A list of class "svars" with elements
@@ -19,13 +21,19 @@ A list of class "svars" with elements
 \item{df}{Estimated degrees of freedom}
 \item{df_SE}{Standard errors of the degrees of freedom}
 \item{Fish}{Observed Fisher information matrix}
-\item{A_hat}{Estimated VAR parameter}
+\item{A_hat}{Estimated VAR parameter via ML}
 \item{B_stand}{Estimated standardized structural impact matrix}
 \item{B_stand_SE}{Standard errors of standardized matrix B_stand}
 \item{Lik}{Function value of likelihood}
 \item{method}{Method applied for identification}
 \item{n}{Number of observations}
 \item{type}{Type of the VAR model, e.g. 'const'}
+\item{y}{Data matrix}
+\item{p}{Number of lags}
+\item{K}{Dimension of the VAR}
+\item{restrictions}{Number of specified restrictions}
+\item{restriction_matrix}{Specified restriction matrix}
+\item{stage3}{Logical, whether Stage 3 is performed}
 }
 \description{
 Given an estimated VAR model, this function applies identification by means of a non-Gaussian likelihood for the structural impact matrix B of the corresponding SVAR model
@@ -49,7 +57,7 @@ x1$B <- x1$B[,c(3,2,1)]
 x1$B[,3] <- x1$B[,3]*(-1)
 
 # impulse response analysis
-i1 <- imrf(x1, horizon = 30)
+i1 <- irf(x1, n.ahead = 30)
 plot(i1, scales = 'free_y')
 }
 }
