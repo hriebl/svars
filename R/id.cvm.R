@@ -169,7 +169,7 @@ id.cvm <- function(x, dd = NULL, itermax = 500, steptol = 100, iter2 = 75){
   }
 
   ## First step of optimization with DEoptim
-  de_control <- list(itermax = itermax, steptol = steptol,  trace = FALSE)
+  de_control <- list(itermax = itermax, steptol = steptol,  trace = TRUE)
 
   de_res <- DEoptim(testlik, lower = lower, upper = upper,
                     control = de_control, faklow = faklow1,
@@ -268,7 +268,8 @@ id.cvm <- function(x, dd = NULL, itermax = 500, steptol = 100, iter2 = 75){
                  test.stats = logs,# minimum teststatistic obtained
                  iter1 =  de_res$optim$iter, # number of iterations of first optimization
                  test1 = de_res$optim$bestval, # minimum teststatistic from first optimization
-                 test2 = min(logliks) # minimum teststatistic from second optimization
+                 test2 = min(logliks), # minimum teststatistic from second optimization
+                 mod_orig = x
   )
 
   class(result) <- "svars"

@@ -333,7 +333,8 @@ id.ngml <- function(x, stage3 = FALSE){
                  y = yOut,             # Data
                  p = p,                # number of lags
                  K = k,                # number of time series
-                 stage3 = stage3
+                 stage3 = stage3,
+                 mod_orig = x
   )
   class(result) <- "svars"
   return(result)

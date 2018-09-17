@@ -192,7 +192,8 @@ id.dc <- function(x, PIT=FALSE){
               y = yOut,       # Data
               p = unname(p),  # number of lags
               K = k,          # number of time series
-              PIT=PIT
+              PIT=PIT,
+              mod_orig = x
               )
   class(result) <- "svars"
   return(result)

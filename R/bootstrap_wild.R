@@ -127,7 +127,17 @@ wild.boot <- function(x, rademacher = TRUE, horizon, nboot, nc = 1, dd = NULL, s
   bootf <- function(Ustar1){
 
     Ystar <- t(A %*% Z + Ustar1)
-    Bstar <- t(Ystar) %*% t(Z) %*% solve(Z %*% t(Z))
+
+    if (inherits(x$mod_orig, "vec2var")) {
+      # TODO: implement all options of ca.jo and vec2var
+      vecm <- ca.jo(Ystar, ecdet = x$mod_orig$vecm@ecdet, K = x$mod_orig$vecm@lag)
+      v2v <- vec2var(vecm, r = x$mod_orig$r)
+
+      Bstar <- do.call(cbind, c(list(v2v$deterministic), v2v$A))
+    } else {
+      Bstar <- t(Ystar) %*% t(Z) %*% solve(Z %*% t(Z))
+    }
+
     Ustar <- Ystar - t(Bstar %*% Z)
     Sigma_u_star <- crossprod(Ustar)/(ncol(Ustar1) - 1 - k * p)
 

@@ -165,7 +165,15 @@ mb.boot <- function(x, b.length = 15, horizon, nboot, nc = 1, dd = NULL, signres
       }
     }
 
-    varb <- suppressWarnings(VAR(Ystar, p = x$p, type = x$type))
+    if (inherits(x$mod_orig, "vec2var")) {
+      colnames(Ystar) <- colnames(x$y)
+      # TODO: implement all options of ca.jo and vec2var
+      vecm <- ca.jo(Ystar, ecdet = x$mod_orig$vecm@ecdet, K = x$mod_orig$vecm@lag)
+      varb <- vec2var(vecm, r = x$mod_orig$r)
+    } else {
+      varb <- suppressWarnings(VAR(Ystar, p = x$p, type = x$type))
+    }
+
     Ustar <- residuals(varb)
     Sigma_u_star <- crossprod(Ustar)/(obs - 1 - k * p)
 
