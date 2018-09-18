@@ -67,23 +67,23 @@ get_var_objects <- function(x){
     assign("coef_x", lapply(coef_x, as.matrix), envir = parent.frame())
 
   }else if(inherits(x, "vec2var")){
+    assign("k", ncol(x$resid), envir = parent.frame())
     k <- ncol(x$resid)
     coef_x <- vector("list", length = k)
     names(coef_x) <- colnames(x$y)
+    assign("coef_x", coef_x, envir = parent.frame())
+    assign("yOut", x$y, envir = parent.frame())
     p <- x$p
+    assign("p", x$p, envir = parent.frame())
+    assign("y", t(x$y), envir = parent.frame())
 
     for (i in seq_len(k)) {
       for (j in seq_len(p)) coef_x[[i]] <- c(coef_x[[i]], x$A[[j]][i,])
       coef_x[[i]] <- c(coef_x[[i]], x$deterministic[i,])
     }
-
-    assign("k", k, envir = parent.frame())
-    assign("yOut", x$y, envir = parent.frame())
-    assign("p", p, envir = parent.frame())
-    assign("y", t(x$y), envir = parent.frame())
-
     assign("coef_x", lapply(coef_x, matrix), envir = parent.frame())
     assign("type", "const", envir = parent.frame())
+
   }else{
     stop("Object class is not supported")
   }
