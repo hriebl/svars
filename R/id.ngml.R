@@ -84,7 +84,8 @@ id.ngml <- function(x, stage3 = FALSE, restriction_matrix = NULL){
   }else{
     restriction_matrix <- NULL
     result <- identifyNGML(x = x, coef_x = coef_x, Sigma_hat = Sigma_hat, u = u, k = k, p = p, Tob = Tob, yOut = yOut, type = type,
-                           stage3 = stage3, restriction_matrix = restriction_matrix, y = y, mod_orig = x)
+                           stage3 = stage3, restriction_matrix = restriction_matrix, y = y)
+    result$mod_orig <- x
      }
   class(result) <- "svars"
   return(result)
