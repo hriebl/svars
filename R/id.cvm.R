@@ -91,7 +91,7 @@ id.cvm <- function(x, dd = NULL, itermax = 500, steptol = 100, iter2 = 75){
   }
 
   ## First step of optimization with DEoptim
-  de_control <- list(itermax = itermax, steptol = steptol,  trace = TRUE)
+  de_control <- list(itermax = itermax, steptol = steptol, trace = FALSE)
 
   de_res <- DEoptim(testlik, lower = lower, upper = upper,
                     control = de_control, faklow = faklow1,
